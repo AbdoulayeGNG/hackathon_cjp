@@ -4,10 +4,11 @@ from utilisateurs.models import Utilisateur
 
 class Report(models.Model):
     CATEGORY_CHOICES = [
-        ('route', 'Route endommagée'),
-        ('electricity', 'Panne électrique'),
-        ('waste', 'Déchets non collectés'),
-        ('other', 'Autre'),
+        ('road', 'Route endommagée'),
+        ('light', 'Éclairage public'),
+        ('trash', 'Déchets'),
+        ('water', 'Problème d\'eau'),
+        ('other', 'Autre')
     ]
 
     STATUS_CHOICES = [

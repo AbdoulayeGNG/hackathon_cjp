@@ -6,7 +6,11 @@ class UtilisateurCreationForm(UserCreationForm):
     email = forms.EmailField(required=True)
     first_name = forms.CharField(required=True)
     last_name = forms.CharField(required=True)
-    role = forms.ChoiceField(choices=Utilisateur.ROLES)
+    
+    # Filtrer les choix pour exclure le rôle administrateur
+    FILTERED_ROLES = [choice for choice in Utilisateur.ROLES if choice[0] != 'admin']
+    role = forms.ChoiceField(choices=FILTERED_ROLES)
+    
     phone = forms.CharField(required=False)
     adresse = forms.CharField(required=False)
     date_naissance = forms.DateField(required=False)

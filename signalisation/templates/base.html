@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -17,6 +18,70 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     
     {% block extra_css %}{% endblock %}
+    
+    <style>
+        .navbar {
+            background-color: rgba(13, 110, 253, 0.95) !important; /* Bleu Bootstrap plus opaque */
+        }
+        
+        .navbar-nav .nav-link {
+            color: rgba(255, 255, 255, 0.9) !important; /* Texte plus opaque */
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar-nav .nav-link:hover {
+            color: #ffffff !important;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        
+        .navbar-nav .active > .nav-link,
+        .navbar-nav .nav-link.active {
+            color: #ffffff !important;
+            font-weight: 600;
+            position: relative;
+        }
+        
+        .navbar-nav .active > .nav-link::after,
+        .navbar-nav .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 1rem;
+            right: 1rem;
+            height: 2px;
+            background-color: #ffffff;
+        }
+        
+        .navbar-brand {
+            color: #ffffff !important;
+            font-weight: 600;
+            font-size: 1.3rem;
+        }
+        
+        .dropdown-menu {
+            background-color: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: none;
+            border-radius: 8px;
+        }
+        
+        .dropdown-item {
+            padding: 0.5rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .dropdown-item:hover {
+            background-color: rgba(13, 110, 253, 0.1);
+        }
+        
+        .navbar-toggler {
+            border-color: rgba(255, 255, 255, 0.7);
+        }
+    </style>
 </head>
 <body>
     <!-- Navbar -->
@@ -28,41 +93,64 @@
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
+            
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
+                    <!-- Liens publics -->
                     <li class="nav-item">
-                        {% comment %} <a class="nav-link" href="{% url 'reports:map' %}"> {% endcomment %}
+                        <a href="{% url 'reports:map' %}" class="nav-link">
                             <i class="fas fa-map"></i> Carte
                         </a>
                     </li>
-                    <li class="nav-item">
-                        {% comment %} <a class="nav-link" href="{% url 'reports:create' %}"> {% endcomment %}
-                            <i class="fas fa-plus-circle"></i> Signaler
-                        </a>
-                    </li>
+
+                    {% if user.is_authenticated %}
+                        {% if user.is_staff %}
+                        <!-- Menu Admin -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" 
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-shield-alt"></i> Administration
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'dashboard:dashboard' %}">
+                                        <i class="fas fa-tachometer-alt"></i> Tableau de bord
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'dashboard:admin' %}">
+                                        <i class="fas fa-tasks"></i> Gestion des signalements
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        {% endif %}
+                        {% if user.is_superuser %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'dashboard:admin_list' %}">
+                                <i class="fas fa-users-cog"></i> Gestion des administrateurs
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endif %}
                 </ul>
+                
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-user"></i> {{ user.username }}
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" 
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user-circle"></i> {{ user.username }}
                             </a>
-                            <ul class="dropdown-menu">
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                                 <li>
                                     <a class="dropdown-item" href="{% url 'utilisateurs:profile' %}">
-                                        <i class="fas fa-user-circle"></i> Profil
+                                        <i class="fas fa-id-card"></i> Mon profil
                                     </a>
                                 </li>
-                                {% if user.is_staff %}
-                                    <li>
-                                        <a class="dropdown-item" href="{% url 'dashboard:admin' %}">
-                                            <i class="fas fa-tachometer-alt"></i> Tableau de bord
-                                        </a>
-                                    </li>
-                                {% endif %}
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
-                                    <a class="dropdown-item logout-link" href="{% url 'utilisateurs:logout' %}">
+                                    <a class="dropdown-item text-danger" href="{% url 'utilisateurs:logout' %}">
                                         <i class="fas fa-sign-out-alt"></i> Déconnexion
                                     </a>
                                 </li>
@@ -70,12 +158,12 @@
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'utilisateurs:login' %}">
+                            <a href="{% url 'utilisateurs:login' %}" class="nav-link">
                                 <i class="fas fa-sign-in-alt"></i> Connexion
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'utilisateurs:register' %}">
+                            <a href="{% url 'utilisateurs:register' %}" class="nav-link">
                                 <i class="fas fa-user-plus"></i> Inscription
                             </a>
                         </li>

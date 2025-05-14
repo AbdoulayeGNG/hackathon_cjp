@@ -1,35 +1,62 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Tableau de bord administrateur - SignalGuinée{% endblock %}
+{% block title %}Tableau de bord administrateur{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+<style>
+    .report-card {
+        transition: transform 0.2s;
+    }
+    .report-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .status-badge {
+        min-width: 100px;
+        text-align: center;
+    }
+    .report-image {
+        max-height: 200px;
+        object-fit: cover;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <h1 class="mb-4">Tableau de bord administrateur</h1>
-    
+<div class="container-fluid py-4">
     <!-- Statistics Cards -->
     <div class="row mb-4">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card bg-primary text-white">
                 <div class="card-body">
-                    <h5 class="card-title">En attente</h5>
-                    <h2 class="card-text">{{ pending_reports }}</h2>
+                    <h5 class="card-title">Total</h5>
+                    <h2>{{ total_reports }}</h2>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card bg-warning text-white">
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h5 class="card-title">En attente</h5>
+                    <h2>{{ pending_reports }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
                 <div class="card-body">
                     <h5 class="card-title">En cours</h5>
-                    <h2 class="card-text">{{ in_progress_reports }}</h2>
+                    <h2>{{ in_progress_reports }}</h2>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card bg-success text-white">
                 <div class="card-body">
                     <h5 class="card-title">Résolus</h5>
-                    <h2 class="card-text">{{ resolved_reports }}</h2>
+                    <h2>{{ resolved_reports }}</h2>
                 </div>
             </div>
         </div>
@@ -37,41 +64,71 @@
 
     <!-- Reports Table -->
     <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Liste des signalements</h5>
+        </div>
         <div class="card-body">
-            <h5 class="card-title">Tous les signalements</h5>
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Titre</th>
-                            <th>Catégorie</th>
-                            <th>Statut</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for report in all_reports %}
-                        <tr>
-                            <td>{{ report.created_at|date:"d/m/Y" }}</td>
-                            <td>{{ report.title }}</td>
-                            <td>{{ report.get_category_display }}</td>
-                            <td>
-                                <span class="badge bg-{{ report.get_status_color }}">
-                                    {{ report.get_status_display }}
-                                </span>
-                            </td>
-                            <td>
-                                <a href="{% url 'reports:detail' report.id %}" class="btn btn-sm btn-info">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+            <table class="table table-striped" id="reportsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Titre</th>
+                        <th>Catégorie</th>
+                        <th>Date</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in reports %}
+                    <tr>
+                        <td>{{ report.id }}</td>
+                        <td>{{ report.title }}</td>
+                        <td>{{ report.get_category_display }}</td>
+                        <td>{{ report.created_at|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            <span class="badge bg-{{ report.get_status_color }}">
+                                {{ report.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <form method="post" action="{% url 'dashboard:update_status' report.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                                    {% for status, label in status_choices %}
+                                    <option value="{{ status }}" {% if report.status == status %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                            <a href="{% url 'reports:detail' report.id %}" class="btn btn-sm btn-info ms-1">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    $('#reportsTable').DataTable({
+        language: {
+            url: 'https://cdn.datatables.net/plug-ins/1.11.5/i18n/fr-FR.json'
+        },
+        order: [[3, 'desc']],
+        pageLength: 10
+    });
+});
+</script>
 {% endblock %}

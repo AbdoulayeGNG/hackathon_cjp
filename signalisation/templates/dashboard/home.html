@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Accueil - SignalGuinée{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="jumbotron bg-light p-5 rounded">
+        <h1 class="display-4">Bienvenue sur SignalGuinée</h1>
+        <p class="lead">Plateforme de signalement des problèmes urbains en Guinée</p>
+        <hr class="my-4">
+        <div class="row">
+            <div class="col-md-6">
+                <p>Contribuez à l'amélioration de votre ville en signalant les problèmes rencontrés.</p>
+                <a class="btn btn-primary btn-lg" href="{% url 'reports:create' %}" role="button">
+                    <i class="fas fa-plus-circle"></i> Faire un signalement
+                </a>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Statistiques globales</h5>
+                        <p class="h3 text-primary">{{ total_reports }}</p>
+                        <p>Signalements enregistrés</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Derniers signalements</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_reports %}
+                        <div class="list-group">
+                        {% for report in recent_reports %}
+                            <a href="{% url 'reports:detail' report.pk %}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ report.title }}</h6>
+                                    <small class="text-muted">{{ report.created_at|timesince }}</small>
+                                </div>
+                                <p class="mb-1">{{ report.description|truncatewords:30 }}</p>
+                                <small class="text-muted">
+                                    <i class="fas fa-map-marker-alt"></i> {{ report.address }}
+                                </small>
+                            </a>
+                        {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Aucun signalement pour le moment.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Par catégorie</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                    {% for stat in categories_stats %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ stat.category|title }}
+                            <span class="badge bg-primary rounded-pill">{{ stat.count }}</span>
+                        </div>
+                    {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
