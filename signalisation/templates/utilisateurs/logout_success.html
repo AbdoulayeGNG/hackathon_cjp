@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Déconnexion - SignalGuinée{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="auth-card">
+                    <div class="text-center">
+                        <i class="fas fa-check-circle text-success fa-4x mb-3"></i>
+                        <h2 class="auth-title">Déconnexion réussie</h2>
+                        <p class="mb-4">Vous avez été déconnecté avec succès.</p>
+                        <a href="{% url 'utilisateurs:login' %}" class="btn btn-primary auth-btn">
+                            Se reconnecter
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

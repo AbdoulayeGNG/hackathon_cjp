@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Nouveau signalement - SignalGuinée{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<link rel="stylesheet" href="{% static 'css/reports.css' %}">
+<style>
+    .error-feedback {
+        color: #dc3545;
+        font-size: 0.875em;
+        margin-top: 0.25rem;
+    }
+    .location-info {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 4px;
+        margin-top: 10px;
+        display: none;
+    }
+    .location-info.active {
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">Nouveau signalement</h2>
+                    
+                    {% if messages %}
+                    <div class="messages mb-4">
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <form method="post" enctype="multipart/form-data" id="reportForm" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.title.id_for_label }}" class="form-label">Titre*</label>
+                            {{ form.title }}
+                            {% if form.title.errors %}
+                            <div class="error-feedback">{{ form.title.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.category.id_for_label }}" class="form-label">Catégorie*</label>
+                            {{ form.category }}
+                            {% if form.category.errors %}
+                            <div class="error-feedback">{{ form.category.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">Description*</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                            <div class="error-feedback">{{ form.description.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.image.id_for_label }}" class="form-label">Image</label>
+                            {{ form.image }}
+                            {% if form.image.errors %}
+                            <div class="error-feedback">{{ form.image.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Localisation*</label>
+                            <div id="map" style="height: 300px;"></div>
+                            {{ form.location_lat }}
+                            {{ form.location_lng }}
+                            {{ form.address }}
+                            
+                            <div class="location-info" id="locationInfo">
+                                <h6 class="mb-3">Informations de localisation</h6>
+                                <ul class="list-unstyled">
+                                    <li><strong>Latitude:</strong> <span id="latDisplay">-</span></li>
+                                    <li><strong>Longitude:</strong> <span id="lngDisplay">-</span></li>
+                                    <li><strong>Adresse:</strong> <span id="addressDisplay">-</span></li>
+                                </ul>
+                            </div>
+
+                            <div id="location-error" class="error-feedback" style="display: none;">
+                                Veuillez sélectionner un emplacement sur la carte
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            Envoyer le signalement
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Instructions</h5>
+                    <p class="card-text">
+                        1. Donnez un titre clair à votre signalement<br>
+                        2. Sélectionnez la catégorie appropriée<br>
+                        3. Décrivez le problème en détail<br>
+                        4. Ajoutez une photo si possible<br>
+                        5. Cliquez sur la carte pour indiquer l'emplacement
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialisation de la carte
+    var map = L.map('map').setView([9.6412, -13.5784], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    var marker;
+    var locationInfo = document.getElementById('locationInfo');
+    var latDisplay = document.getElementById('latDisplay');
+    var lngDisplay = document.getElementById('lngDisplay');
+    var addressDisplay = document.getElementById('addressDisplay');
+
+    map.on('click', function(e) {
+        if (marker) {
+            map.removeLayer(marker);
+        }
+        
+        marker = L.marker(e.latlng).addTo(map);
+        
+        // Mise à jour des champs cachés
+        document.getElementById('id_location_lat').value = e.latlng.lat.toFixed(6);
+        document.getElementById('id_location_lng').value = e.latlng.lng.toFixed(6);
+        
+        // Mise à jour de l'affichage des coordonnées
+        latDisplay.textContent = e.latlng.lat.toFixed(6);
+        lngDisplay.textContent = e.latlng.lng.toFixed(6);
+        
+        // Affichage du bloc d'informations
+        locationInfo.classList.add('active');
+        
+        // Géocodage inverse pour obtenir l'adresse
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${e.latlng.lat}&lon=${e.latlng.lng}`)
+            .then(response => response.json())
+            .then(data => {
+                const address = data.display_name;
+                document.getElementById('id_address').value = address;
+                addressDisplay.textContent = address;
+            })
+            .catch(error => {
+                console.error('Erreur de géocodage:', error);
+                addressDisplay.textContent = 'Erreur lors de la récupération de l\'adresse';
+            });
+    });
+
+    // Validation du formulaire
+    document.getElementById('reportForm').addEventListener('submit', function(e) {
+        if (!document.getElementById('id_location_lat').value || 
+            !document.getElementById('id_location_lng').value) {
+            e.preventDefault();
+            document.getElementById('location-error').style.display = 'block';
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

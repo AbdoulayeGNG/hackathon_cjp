@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %}Accueil - SignalGuinée{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero bg-primary text-white py-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold">Ensemble, améliorons notre ville</h1>
+                <p class="lead mb-4">Signalez les problèmes urbains en Guinée et contribuez à rendre votre ville meilleure.</p>
+                {% if not user.is_authenticated %}
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                        <a href="{% url 'utilisateurs:register' %}" class="btn btn-light btn-lg px-4 me-md-2">S'inscrire</a>
+                        <a href="{% url 'utilisateurs:login' %}" class="btn btn-outline-light btn-lg px-4">Se connecter</a>
+                    </div>
+                {% else %}
+                    <a href="{% url 'reports:create' %}" class="btn btn-light btn-lg px-4">
+                        <i class="fas fa-plus-circle"></i> Créer un signalement
+                    </a>
+                {% endif %}
+            </div>
+            <div class="col-lg-6">
+                <img src="/static/images/city-illustration.svg" alt="Illustration ville" class="img-fluid">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">Comment ça marche ?</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="fas fa-map-marker-alt fa-3x text-primary mb-3"></i>
+                        <h3 class="h5">Localisez</h3>
+                        <p class="card-text">Identifiez précisément l'emplacement du problème sur la carte</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="fas fa-camera fa-3x text-primary mb-3"></i>
+                        <h3 class="h5">Signalez</h3>
+                        <p class="card-text">Prenez une photo et décrivez le problème rencontré</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="fas fa-check-circle fa-3x text-primary mb-3"></i>
+                        <h3 class="h5">Suivez</h3>
+                        <p class="card-text">Suivez l'évolution et la résolution du problème signalé</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+ <!-- Recent Reports Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-5">Derniers signalements</h2>
+        <div class="row g-4">
+            {% for report in recent_reports %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100">
+                        {% if report.image %}
+                            <img src="{{ report.image.url }}" class="card-img-top" alt="{{ report.title }}">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ report.title }}</h5>
+                            <p class="card-text">{{ report.description|truncatewords:20 }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">{{ report.created_at|date:"d/m/Y" }}</small>
+                                <span class="badge bg-{{ report.get_status_color }}">{{ report.get_status_display }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-12 text-center">
+                    <p>Aucun signalement pour le moment</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Statistics Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-4 mb-4 mb-md-0">
+                <h2 class="display-4 fw-bold text-primary">{{ total_reports }}</h2>
+                <p class="text-muted">Signalements total</p>
+            </div>
+            <div class="col-md-4 mb-4 mb-md-0">
+                <h2 class="display-4 fw-bold text-primary">{{ resolved_reports }}</h2>
+                <p class="text-muted">Problèmes résolus</p>
+            </div>
+            <div class="col-md-4">
+                <h2 class="display-4 fw-bold text-primary">{{ total_users }}</h2>
+                <p class="text-muted">Utilisateurs actifs</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .hero {
+        background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
+    }
+    .card {
+        transition: transform 0.2s;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Modifier le signalement - SignalGuinée{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<link rel="stylesheet" href="{% static 'css/reports.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">Modifier le signalement</h2>
+                    
+                    {% if messages %}
+                    <div class="messages mb-4">
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <form method="post" enctype="multipart/form-data" id="reportForm">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.title.id_for_label }}" class="form-label">Titre*</label>
+                            {{ form.title }}
+                            {% if form.title.errors %}
+                            <div class="error-feedback">{{ form.title.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.category.id_for_label }}" class="form-label">Catégorie*</label>
+                            {{ form.category }}
+                            {% if form.category.errors %}
+                            <div class="error-feedback">{{ form.category.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">Description*</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                            <div class="error-feedback">{{ form.description.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.image.id_for_label }}" class="form-label">Image</label>
+                            {% if report.image %}
+                            <div class="mb-2">
+                                <img src="{{ report.image.url }}" alt="Image actuelle" class="img-thumbnail" style="max-height: 200px;">
+                            </div>
+                            {% endif %}
+                            {{ form.image }}
+                            {% if form.image.errors %}
+                            <div class="error-feedback">{{ form.image.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Localisation*</label>
+                            <div id="map"></div>
+                            {{ form.location_lat }}
+                            {{ form.location_lng }}
+                            {{ form.address }}
+                            <div id="location-error" class="error-feedback" style="display: none;">
+                                Veuillez sélectionner un emplacement sur la carte
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Enregistrer
+                            </button>
+                            <a href="{% url 'reports:detail' report.pk %}" class="btn btn-secondary">
+                                Annuler
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Récupération des coordonnées initiales
+    const initialLat = {{ report.location_lat|stringformat:'f' }};
+    const initialLng = {{ report.location_lng|stringformat:'f' }};
+
+    // Initialisation de la carte
+    const map = L.map('map').setView([initialLat, initialLng], 15);
+    
+    // Ajout de la couche de tuiles OpenStreetMap
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Création du marqueur initial
+    let marker = L.marker([initialLat, initialLng]).addTo(map);
+
+    // Gestion du clic sur la carte
+    map.on('click', function(e) {
+        // Suppression du marqueur existant
+        if (marker) {
+            map.removeLayer(marker);
+        }
+        
+        // Création d'un nouveau marqueur
+        marker = L.marker(e.latlng).addTo(map);
+        
+        // Mise à jour des champs cachés
+        document.getElementById('id_location_lat').value = e.latlng.lat.toFixed(6);
+        document.getElementById('id_location_lng').value = e.latlng.lng.toFixed(6);
+        
+        // Géocodage inverse pour obtenir l'adresse
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${e.latlng.lat}&lon=${e.latlng.lng}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('id_address').value = data.display_name;
+                console.log('Adresse mise à jour:', data.display_name);
+            })
+            .catch(error => console.error('Erreur lors du géocodage:', error));
+    });
+
+    // Force le recalcul de la taille de la carte
+    setTimeout(() => {
+        map.invalidateSize();
+    }, 100);
+});
+</script>
+{% endblock %}
