@@ -1,0 +1,13 @@
+.leaflet-control-layers {
+    border: none !important;
+    border-radius: 8px !important;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.2) !important;
+}
+
+.leaflet-control-layers-list {
+    padding: 10px;
+}
+
+.leaflet-control-layers-overlays label {
+    margin: 5px 0;
+}

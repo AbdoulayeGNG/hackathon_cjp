@@ -1,0 +1,187 @@
+isation\templates\reports\map.html
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Carte des signalements - Guinée{% endblock %}
+
+{% block extra_css %}
+<style>
+    #map {
+        height: 600px;
+        width: 100%;
+        border: 1px solid #ddd;
+        margin: 15px 0;
+        z-index: 1;
+    }
+    
+    .map-legend {
+        position: absolute;
+        bottom: 30px;
+        right: 10px;
+        z-index: 1000;
+        background: white;
+        padding: 10px;
+        border-radius: 4px;
+        box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        margin: 5px 0;
+    }
+    
+    .legend-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+    
+    .marker-popup {
+        padding: 10px;
+    }
+    
+    .marker-popup img {
+        max-width: 200px;
+        height: auto;
+        margin-bottom: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+    <div class="row">
+        <div class="col-12 position-relative">
+            <!-- Affichage du nombre de signalements -->
+            <div class="alert alert-info">
+                Nombre de signalements: {{ reports.count }}
+            </div>
+
+            <div id="map"></div>
+            
+            <!-- Légende -->
+            <div class="map-legend">
+                <h6 class="mb-2">Légende</h6>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ffc107;"></div>
+                    <span>En attente</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #17a2b8;"></div>
+                    <span>En cours</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #28a745;"></div>
+                    <span>Résolu</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Initialisation de la carte...');
+
+    // Création de la carte avec les limites de la Guinée
+    const GUINEA_BOUNDS = {
+        north: 12.67,
+        south: 7.19,
+        west: -15.08,
+        east: -7.64
+    };
+
+    const map = L.map('map', {
+        center: [9.945587, -9.696645], // Centre de la Guinée
+        zoom: 7,
+        minZoom: 6,
+        maxBounds: [
+            [GUINEA_BOUNDS.south - 1, GUINEA_BOUNDS.west - 1],
+            [GUINEA_BOUNDS.north + 1, GUINEA_BOUNDS.east + 1]
+        ]
+    });
+
+    // Ajout du fond de carte
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Debug - Ajouter un marqueur de test
+    L.marker([9.945587, -9.696645])
+        .bindPopup('Marqueur test - Conakry')
+        .addTo(map);
+
+    // Liste des signalements
+    const reports = [
+        {% for report in reports %}
+            {
+                id: {{ report.id }},
+                lat: {{ report.location_lat|stringformat:"f" }},
+                lng: {{ report.location_lng|stringformat:"f" }},
+                title: "{{ report.title|escapejs }}",
+                status: "{{ report.status }}",
+                description: "{{ report.description|escapejs|truncatewords:30 }}"
+            }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    console.log('Signalements à afficher:', reports);
+
+    // Ajout des signalements
+    reports.forEach(report => {
+        try {
+            console.log(`Ajout du marqueur: [${report.lat}, ${report.lng}]`);
+            
+            const marker = L.marker([report.lat, report.lng], {
+                icon: L.divIcon({
+                    className: 'custom-div-icon',
+                    html: `<div style="
+                        background-color: ${getStatusColor(report.status)};
+                        width: 15px;
+                        height: 15px;
+                        border-radius: 50%;
+                        border: 2px solid white;
+                        box-shadow: 0 0 4px rgba(0,0,0,0.4);
+                    "></div>`,
+                    iconSize: [15, 15],
+                    iconAnchor: [7, 7]
+                })
+            });
+
+            marker.bindPopup(`
+                <div class="marker-popup">
+                    <h5>${report.title}</h5>
+                    <p>${report.description}</p>
+                    <a href="/reports/detail/${report.id}/" class="btn btn-sm btn-primary">
+                        Voir détails
+                    </a>
+                </div>
+            `);
+
+            marker.addTo(map);
+            console.log(`Marqueur ${report.id} ajouté avec succès`);
+        } catch (error) {
+            console.error(`Erreur pour le marqueur ${report.id}:`, error);
+        }
+    });
+
+    function getStatusColor(status) {
+        return {
+            'pending': '#ffc107',
+            'in_progress': '#17a2b8',
+            'resolved': '#28a745'
+        }[status] || '#6c757d';
+    }
+
+    // Force le recalcul de la taille
+    setTimeout(() => {
+        map.invalidateSize();
+        console.log('Carte redimensionnée');
+    }, 500);
+});
+</script>
+{% endblock %}

@@ -62,3 +62,20 @@ def update_report(request, pk):
         'form': form,
         'report': report
     })
+
+def map_view(request):
+    reports = Report.objects.all()
+    
+    # Debug - Affichage des signalements dans la console
+    print("==== Données des signalements ====")
+    print(f"Nombre total: {reports.count()}")
+    for report in reports:
+        print(f"""
+        ID: {report.id}
+        Titre: {report.title}
+        Lat: {report.location_lat}
+        Lng: {report.location_lng}
+        Status: {report.status}
+        """)
+
+    return render(request, 'reports/map.html', {'reports': reports})
